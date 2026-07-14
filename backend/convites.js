@@ -1,17 +1,14 @@
 const express = require('express');
 const crypto = require('crypto');
-const mysql = require('mysql2/promise');
 const jwt = require('jsonwebtoken');
+const { createClient } = require('@supabase/supabase-js');
 
 const router = express.Router();
-const pool = mysql.createPool({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    waitForConnections: true,
-    connectionLimit: 10
-});
+
+const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 // Middleware para verificar token
 const verificarToken = (req, res, next) => {
@@ -43,15 +40,23 @@ router.post('/criar', verificarToken, async (req, res) => {
     try {
         const conviteId = crypto.randomUUID();
         const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + 7); // Expira em 7 dias
+        expiresAt.setDate(expiresAt.getDate() + 7);
 
-        await pool.query(
-            `INSERT INTO convites (convite_id, nome_convidado, email, convidado_por, expires_at) 
-             VALUES (?, ?, ?, ?, ?)`,
-            [conviteId, nome_convidado, contato, req.usuarioId, expiresAt]
-        );
+        const { data, error } = await supabase
+            .from('convites')
+            .insert([{
+                convite_id: conviteId,
+                nome_convidado,
+                email: contato,
+                convidado_por: req.usuarioId,
+                expires_at: expiresAt.toISOString()
+            }])
+            .select()
+            .single();
 
-        const linkConvite = `http://localhost:3000/cadastro-convite/${conviteId}`;
+        if (error) throw error;
+
+        const linkConvite = `${process.env.BASE_URL || 'http://localhost:3000'}/cadastro-convite/${conviteId}`;
         
         res.json({
             success: true,
@@ -71,19 +76,21 @@ router.get('/verificar/:conviteId', async (req, res) => {
     const { conviteId } = req.params;
 
     try {
-        const [convites] = await pool.query(
-            `SELECT * FROM convites 
-             WHERE convite_id = ? AND status = 'pendente' AND expires_at > NOW()`,
-            [conviteId]
-        );
+        const { data, error } = await supabase
+            .from('convites')
+            .select('*')
+            .eq('convite_id', conviteId)
+            .eq('status', 'pendente')
+            .gt('expires_at', new Date().toISOString())
+            .single();
 
-        if (convites.length === 0) {
+        if (error || !data) {
             return res.status(400).json({ error: 'Convite inválido ou expirado' });
         }
 
         res.json({
             success: true,
-            convite: convites[0]
+            convite: data
         });
     } catch (error) {
         console.error(error);
@@ -100,51 +107,62 @@ router.post('/registrar', async (req, res) => {
     }
 
     try {
-        // Verificar convite
-        const [convites] = await pool.query(
-            `SELECT * FROM convites 
-             WHERE convite_id = ? AND status = 'pendente' AND expires_at > NOW()`,
-            [conviteId]
-        );
+        const { data: convite, error: conviteError } = await supabase
+            .from('convites')
+            .select('*')
+            .eq('convite_id', conviteId)
+            .eq('status', 'pendente')
+            .gt('expires_at', new Date().toISOString())
+            .single();
 
-        if (convites.length === 0) {
+        if (conviteError || !convite) {
             return res.status(400).json({ error: 'Convite inválido ou expirado' });
         }
 
-        const convite = convites[0];
+        const { data: existing, error: checkError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('username', username)
+            .single();
 
-        // Verificar se usuário já existe
-        const [existing] = await pool.query('SELECT id FROM users WHERE username = ?', [username]);
-        if (existing.length > 0) {
+        if (existing) {
             return res.status(400).json({ error: 'Usuário já existe' });
         }
 
-        // Criptografar senha
         const bcrypt = require('bcrypt');
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Inserir usuário
-        const [result] = await pool.query(
-            'INSERT INTO users (username, password_hash) VALUES (?, ?)',
-            [username, hashedPassword]
-        );
+        const { data: newUser, error: userError } = await supabase
+            .from('users')
+            .insert([{ username, password_hash: hashedPassword }])
+            .select()
+            .single();
 
-        const userId = result.insertId;
+        if (userError) throw userError;
 
-        // Inserir dados da pessoa
+        const userId = newUser.id;
+
         if (nome_completo) {
-            await pool.query(
-                `INSERT INTO pessoas (user_id, nome_completo, endereco, cpf, titulo_eleitor, zona, sessao, convidado_por) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-                [userId, nome_completo, endereco, cpf, titulo_eleitor, zona, sessao, convite.convidado_por]
-            );
+            const { error: pessoaError } = await supabase
+                .from('pessoas')
+                .insert([{
+                    user_id: userId,
+                    nome_completo,
+                    endereco,
+                    cpf,
+                    titulo_eleitor: titulo_eleitor || null,
+                    zona: zona || null,
+                    sessao: sessao || null,
+                    convidado_por: convite.convidado_por
+                }]);
+
+            if (pessoaError) throw pessoaError;
         }
 
-        // Atualizar status do convite
-        await pool.query(
-            'UPDATE convites SET status = "aceito" WHERE id = ?',
-            [convite.id]
-        );
+        await supabase
+            .from('convites')
+            .update({ status: 'aceito' })
+            .eq('id', convite.id);
 
         res.status(201).json({
             success: true,
