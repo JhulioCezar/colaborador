@@ -1,0 +1,301 @@
+.usuario-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+}
+
+.usuario-card {
+  background: white;
+  border-radius: 24px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+  width: 100%;
+  max-width: 550px;
+  padding: 30px;
+  transition: transform 0.3s;
+  animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Cabeçalho */
+.cabecalho {
+  margin-bottom: 25px;
+  text-align: center;
+}
+
+.saudacao {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.saudacao-icon {
+  font-size: 2.5rem;
+}
+
+.saudacao h1 {
+  font-size: 1.8rem;
+  color: #333;
+  margin: 0;
+}
+
+.data-atual {
+  color: #888;
+  font-size: 0.85rem;
+  margin: 5px 0 0;
+  text-transform: capitalize;
+}
+
+/* Foto do perfil */
+.foto-perfil-container {
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.foto-perfil {
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  margin: 0 auto 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: pointer;
+  border: 4px solid white;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.foto-perfil:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+}
+
+.foto-perfil img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.foto-placeholder {
+  width: 100%;
+  height: 100%;
+  background: rgba(255,255,255,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.camera-icon {
+  font-size: 40px;
+  color: white;
+  opacity: 0.8;
+}
+
+.btn-alterar-foto {
+  background: none;
+  border: none;
+  color: #667eea;
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 5px 10px;
+  transition: color 0.2s;
+}
+
+.btn-alterar-foto:hover {
+  color: #5a67d8;
+}
+
+/* Estatísticas */
+.estatisticas {
+  margin-bottom: 30px;
+  display: flex;
+  justify-content: center;
+}
+
+.estatistica-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f8f9fa;
+  padding: 12px 24px;
+  border-radius: 50px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.estatistica-icon {
+  font-size: 1.8rem;
+}
+
+.estatistica-valor {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #667eea;
+  display: block;
+  line-height: 1;
+}
+
+.estatistica-label {
+  font-size: 0.75rem;
+  color: #888;
+  display: block;
+}
+
+/* Grid de botões */
+.grid-botoes {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.botao-grid {
+  background: #f8f9fa;
+  border: none;
+  border-radius: 16px;
+  padding: 18px 12px;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+}
+
+.botao-grid:hover {
+  background: #667eea;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(102,126,234,0.3);
+}
+
+.botao-grid:hover .botao-icon {
+  color: white;
+}
+
+.botao-grid:hover strong {
+  color: white;
+}
+
+.botao-grid:hover small {
+  color: rgba(255,255,255,0.8);
+}
+
+.botao-icon {
+  font-size: 2rem;
+  color: #667eea;
+  transition: color 0.3s;
+  min-width: 50px;
+  text-align: center;
+}
+
+.botao-grid div {
+  flex: 1;
+}
+
+.botao-grid strong {
+  display: block;
+  font-size: 1rem;
+  color: #333;
+  margin-bottom: 4px;
+  transition: color 0.3s;
+}
+
+.botao-grid small {
+  font-size: 0.7rem;
+  color: #999;
+  transition: color 0.3s;
+}
+
+/* Botão Sair */
+.btn-sair {
+  width: 100%;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 14px;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 1rem;
+  color: #dc3545;
+  margin-bottom: 20px;
+}
+
+.btn-sair:hover {
+  background: #dc3545;
+  color: white;
+  border-color: #dc3545;
+}
+
+.sair-icon {
+  font-size: 1.2rem;
+}
+
+/* Rodapé */
+.rodape {
+  text-align: center;
+  padding-top: 15px;
+  border-top: 1px solid #eee;
+}
+
+.rodape p {
+  font-size: 0.7rem;
+  color: #aaa;
+  margin: 0;
+}
+
+/* Responsividade */
+@media (max-width: 480px) {
+  .usuario-card {
+    padding: 20px;
+  }
+  
+  .grid-botoes {
+    gap: 10px;
+  }
+  
+  .botao-grid {
+    padding: 12px 8px;
+  }
+  
+  .botao-icon {
+    font-size: 1.5rem;
+    min-width: 40px;
+  }
+  
+  .botao-grid strong {
+    font-size: 0.85rem;
+  }
+  
+  .foto-perfil {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .saudacao h1 {
+    font-size: 1.4rem;
+  }
+  
+  .estatistica-valor {
+    font-size: 1.4rem;
+  }
+}
