@@ -1,9 +1,8 @@
 import axios from 'axios';
 
-// URL da API no Render (backend)
-const API_URL = process.env.REACT_APP_API_URL;
+// URL FIXA PARA TESTE - Depois voltamos para variável de ambiente
+const API_URL = 'https://colaborador-backend.onrender.com';
 
-// Criar instância do axios com configurações padrão
 const api = axios.create({
   baseURL: `${API_URL}/api`,
   headers: {
@@ -11,7 +10,6 @@ const api = axios.create({
   },
 });
 
-// Interceptor para adicionar token nas requisições
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
