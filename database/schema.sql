@@ -1,0 +1,25 @@
+CREATE DATABASE IF NOT EXISTS cadastro_pessoas;
+
+USE cadastro_pessoas;
+
+CREATE TABLE IF NOT EXISTS users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS pessoas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    nome_completo VARCHAR(200) NOT NULL,
+    endereco TEXT NOT NULL,
+    cpf VARCHAR(14) UNIQUE NOT NULL,
+    titulo_eleitor VARCHAR(20),
+    zona VARCHAR(10),
+    sessao VARCHAR(10),
+    foto_url TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
