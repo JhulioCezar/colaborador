@@ -1,5 +1,9 @@
 const express = require('express');
 const cors = require('cors');
+app.use(cors({
+  origin: ['https://colaborador-frontend.onrender.com', 'https://colaborador.jhuliosolucoes.com.br'],
+  credentials: true
+}));
 const dotenv = require('dotenv');
 const path = require('path');
 
