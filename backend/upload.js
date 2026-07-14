@@ -3,9 +3,14 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const jwt = require('jsonwebtoken');
-const mysql = require('mysql2/promise');
+const { createClient } = require('@supabase/supabase-js');
 
 const router = express.Router();
+
+const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 // Configurar armazenamento
 const storage = multer.diskStorage({
@@ -48,7 +53,7 @@ const verificarToken = (req, res, next) => {
     const token = authHeader.split(' ')[1];
     
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'meu_segredo_super_secreto_123');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
         req.usuarioId = decoded.id;
         next();
     } catch (error) {
@@ -56,76 +61,62 @@ const verificarToken = (req, res, next) => {
     }
 };
 
-// Upload de foto do perfil do usuário logado (admin)
+// Upload de foto do perfil
 router.post('/foto-perfil', verificarToken, upload.single('foto'), async (req, res) => {
-    console.log('=== UPLOAD FOTO PERFIL ===');
-    console.log('Usuário ID:', req.usuarioId);
-    console.log('Arquivo recebido:', req.file);
-    
     if (!req.file) {
         return res.status(400).json({ error: 'Nenhum arquivo enviado' });
     }
 
-    const fotoUrl = `http://localhost:3001/uploads/${req.file.filename}`;
-    console.log('Foto salva em:', fotoUrl);
-    
-    const pool = mysql.createPool({
-        host: process.env.DB_HOST || 'localhost',
-        user: process.env.DB_USER || 'root',
-        password: process.env.DB_PASSWORD || '',
-        database: process.env.DB_NAME || 'cadastro_pessoas',
-        waitForConnections: true,
-        connectionLimit: 10
-    });
+    const fotoUrl = `${process.env.BASE_URL || 'http://localhost:3001'}/uploads/${req.file.filename}`;
 
     try {
-        // Buscar a pessoa que tem o mesmo nome_completo = 'Administrador' ou a mais antiga do usuário
-        const [pessoas] = await pool.query(
-            'SELECT id FROM pessoas WHERE user_id = ? AND nome_completo = "Administrador" LIMIT 1',
-            [req.usuarioId]
-        );
-        
+        const { data: pessoa, error: findError } = await supabase
+            .from('pessoas')
+            .select('id')
+            .eq('user_id', req.usuarioId)
+            .eq('nome_completo', 'Administrador')
+            .single();
+
         let pessoaId;
-        if (pessoas.length > 0) {
-            pessoaId = pessoas[0].id;
-            console.log('Encontrado perfil Administrador, ID:', pessoaId);
+        if (pessoa) {
+            pessoaId = pessoa.id;
         } else {
-            // Se não encontrar, cria um novo perfil para o admin
-            const [result] = await pool.query(
-                'INSERT INTO pessoas (user_id, nome_completo, endereco, cpf) VALUES (?, "Administrador", "Sistema", "000.000.000-00")',
-                [req.usuarioId]
-            );
-            pessoaId = result.insertId;
-            console.log('Criado novo perfil Administrador, ID:', pessoaId);
+            const { data: newPessoa, error: insertError } = await supabase
+                .from('pessoas')
+                .insert([{
+                    user_id: req.usuarioId,
+                    nome_completo: 'Administrador',
+                    endereco: 'Sistema',
+                    cpf: '000.000.000-00'
+                }])
+                .select()
+                .single();
+
+            if (insertError) throw insertError;
+            pessoaId = newPessoa.id;
         }
 
-        await pool.query(
-            'UPDATE pessoas SET foto_url = ? WHERE id = ?',
-            [fotoUrl, pessoaId]
-        );
-        console.log('Foto do perfil atualizada para pessoa ID:', pessoaId);
+        const { error: updateError } = await supabase
+            .from('pessoas')
+            .update({ foto_url: fotoUrl })
+            .eq('id', pessoaId);
+
+        if (updateError) throw updateError;
 
         res.json({ success: true, foto_url: fotoUrl });
     } catch (error) {
         console.error('Erro ao salvar foto do perfil:', error);
         res.status(500).json({ error: 'Erro ao salvar foto' });
-    } finally {
-        await pool.end();
     }
 });
 
-// Upload de foto de pessoa (NÃO altera a foto do admin)
+// Upload de foto de pessoa
 router.post('/foto-pessoa', verificarToken, upload.single('foto'), async (req, res) => {
-    console.log('=== UPLOAD FOTO PESSOA ===');
-    console.log('Usuário ID:', req.usuarioId);
-    console.log('Arquivo recebido:', req.file);
-    
     if (!req.file) {
         return res.status(400).json({ error: 'Nenhum arquivo enviado' });
     }
 
-    const fotoUrl = `http://localhost:3001/uploads/${req.file.filename}`;
-    console.log('Foto salva em:', fotoUrl);
+    const fotoUrl = `${process.env.BASE_URL || 'http://localhost:3001'}/uploads/${req.file.filename}`;
     
     res.json({ success: true, foto_url: fotoUrl });
 });
