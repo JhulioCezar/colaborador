@@ -1,0 +1,361 @@
+.cadastro-pessoa-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+}
+
+.cadastro-pessoa-card {
+  background: white;
+  padding: 40px;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  width: 100%;
+  max-width: 800px;
+}
+
+.cadastro-pessoa-card h2 {
+  text-align: center;
+  margin-bottom: 30px;
+  color: #333;
+}
+
+.form-row {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 5px;
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  color: #555;
+  font-weight: 500;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+/* Grupo CEP com botão */
+.cep-group {
+  flex: 1;
+}
+
+.cep-input {
+  display: flex;
+  gap: 10px;
+}
+
+.cep-input input {
+  flex: 1;
+}
+
+.btn-cep {
+  padding: 10px 20px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-cep:hover {
+  background: #218838;
+}
+
+/* Link do Google Maps */
+.link-maps {
+  display: block;
+  padding: 10px;
+  background: #f8f9fa;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  color: #667eea;
+  text-decoration: none;
+  font-size: 12px;
+  word-break: break-all;
+  overflow-wrap: break-word;
+}
+
+.link-maps:hover {
+  background: #e9ecef;
+  text-decoration: underline;
+}
+
+/* Botão GPS */
+.gps-button {
+  display: flex;
+  align-items: flex-end;
+}
+
+.btn-gps {
+  width: 100%;
+  padding: 10px;
+  background: #17a2b8;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.btn-gps:hover {
+  background: #138496;
+}
+
+/* Coordenadas com botão de busca */
+.coordenadas-input {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.coordenadas-input input {
+  flex: 2;
+  min-width: 200px;
+}
+
+.btn-buscar-coordenadas {
+  padding: 10px 20px;
+  background: #17a2b8;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.btn-buscar-coordenadas:hover {
+  background: #138496;
+}
+
+.btn-buscar-coordenadas:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+}
+
+/* Botões principais */
+.btn-primary {
+  width: 100%;
+  padding: 12px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+.btn-primary:hover {
+  background: #5a67d8;
+}
+
+.btn-secondary {
+  width: 100%;
+  padding: 12px;
+  background: #f0f0f0;
+  color: #333;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background: #e0e0e0;
+}
+
+.error-message {
+  background: #fee;
+  color: #c33;
+  padding: 10px;
+  border-radius: 5px;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.success-message {
+  background: #efe;
+  color: #3c3;
+  padding: 10px;
+  border-radius: 5px;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+  
+  .cadastro-pessoa-card {
+    padding: 20px;
+  }
+  
+  .cep-input {
+    flex-direction: column;
+  }
+  
+  .btn-cep {
+    width: 100%;
+  }
+  
+  .coordenadas-input {
+    flex-direction: column;
+  }
+  
+  .btn-buscar-coordenadas {
+    width: 100%;
+  }
+}
+
+/* Upload de Foto */
+.foto-upload {
+  text-align: center;
+}
+
+.foto-preview {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: #f0f0f0;
+  margin: 0 auto 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: pointer;
+  border: 2px dashed #667eea;
+  transition: all 0.3s;
+}
+
+.foto-preview:hover {
+  border-color: #5a67d8;
+  transform: scale(1.02);
+}
+
+.foto-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.foto-placeholder {
+  font-size: 14px;
+  color: #999;
+  text-align: center;
+  padding: 10px;
+}
+
+.btn-validar {
+  background: #ffc107;
+  color: #333;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  width: 100%;
+  margin-top: 24px;
+}
+
+.btn-validar:hover {
+  background: #e0a800;
+}
+
+.btn-validar:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.info-message {
+  background: #e3f2fd;
+  color: #1976d2;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  font-size: 13px;
+}
+
+.form-section-votacao {
+    background: #e8f0fe;
+    padding: 15px;
+    border-radius: 12px;
+    margin: 15px 0;
+    border-left: 4px solid #1976d2;
+}
+
+.form-section-votacao h3 {
+    margin: 0 0 15px 0;
+    color: #1976d2;
+    font-size: 1rem;
+}
+
+.info-text {
+    text-align: center;
+    color: #888;
+    font-size: 0.85rem;
+    margin-bottom: 20px;
+}
+
+/* Responsividade para o Cadastro */
+@media (max-width: 768px) {
+  .cadastro-pessoa-container {
+    padding: 10px;
+  }
+
+  .cadastro-pessoa-card {
+    padding: 20px;
+  }
+
+  .form-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .cep-input {
+    flex-direction: column;
+  }
+
+  .btn-cep {
+    width: 100%;
+  }
+
+  .coordenadas-input {
+    flex-direction: column;
+  }
+
+  .btn-buscar-coordenadas {
+    width: 100%;
+  }
+
+  .gps-button {
+    width: 100%;
+  }
+
+  .btn-gps {
+    width: 100%;
+  }
+}
