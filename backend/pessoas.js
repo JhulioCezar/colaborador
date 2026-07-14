@@ -1,16 +1,13 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const mysql = require('mysql2/promise');
+const { createClient } = require('@supabase/supabase-js');
 
 const router = express.Router();
-const pool = mysql.createPool({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    waitForConnections: true,
-    connectionLimit: 10
-});
+
+const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 // Middleware para verificar token
 const verificarToken = (req, res, next) => {
@@ -35,7 +32,8 @@ const verificarToken = (req, res, next) => {
 router.post('/', verificarToken, async (req, res) => {
     const { 
         nome_completo, endereco, cpf, titulo_eleitor, zona, sessao, 
-        foto_url, coordenadas, link_maps, cep, latitude, longitude 
+        foto_url, coordenadas, link_maps, cep, latitude, longitude,
+        endereco_votacao, local_votacao, bairro_votacao, municipio_votacao
     } = req.body;
     
     const user_id = req.usuarioId;
@@ -45,83 +43,96 @@ router.post('/', verificarToken, async (req, res) => {
     }
 
     try {
-        const [result] = await pool.query(
-            `INSERT INTO pessoas (user_id, nome_completo, endereco, cpf, titulo_eleitor, zona, sessao, foto_url, coordenadas, link_maps, cep, latitude, longitude) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [
-                user_id, 
-                nome_completo, 
-                endereco, 
-                cpf, 
-                titulo_eleitor || null, 
-                zona || null, 
-                sessao || null, 
-                foto_url || null, 
-                coordenadas || null, 
-                link_maps || null, 
-                cep || null, 
-                latitude || null, 
-                longitude || null
-            ]
-        );
+        const { data, error } = await supabase
+            .from('pessoas')
+            .insert([{
+                user_id,
+                nome_completo,
+                endereco,
+                cpf,
+                titulo_eleitor: titulo_eleitor || null,
+                zona: zona || null,
+                sessao: sessao || null,
+                foto_url: foto_url || null,
+                coordenadas: coordenadas || null,
+                link_maps: link_maps || null,
+                cep: cep || null,
+                latitude: latitude || null,
+                longitude: longitude || null,
+                endereco_votacao: endereco_votacao || null,
+                local_votacao: local_votacao || null,
+                bairro_votacao: bairro_votacao || null,
+                municipio_votacao: municipio_votacao || null
+            }])
+            .select()
+            .single();
 
-        res.status(201).json({ 
-            success: true, 
+        if (error) {
+            if (error.code === '23505') {
+                return res.status(400).json({ error: 'CPF já cadastrado' });
+            }
+            throw error;
+        }
+
+        res.status(201).json({
+            success: true,
             message: 'Pessoa cadastrada com sucesso',
-            id: result.insertId 
+            id: data.id
         });
     } catch (error) {
         console.error(error);
-        if (error.code === 'ER_DUP_ENTRY') {
-            return res.status(400).json({ error: 'CPF já cadastrado' });
-        }
         res.status(500).json({ error: 'Erro ao cadastrar pessoa: ' + error.message });
     }
 });
 
-// Listar apenas o perfil do usuário logado (para foto e dados pessoais)
+// Listar perfil do usuário logado
 router.get('/minha-rede', verificarToken, async (req, res) => {
     try {
-        const [rows] = await pool.query(
-            'SELECT * FROM pessoas WHERE user_id = ? ORDER BY created_at DESC',
-            [req.usuarioId]
-        );
+        const { data, error } = await supabase
+            .from('pessoas')
+            .select('*')
+            .eq('user_id', req.usuarioId)
+            .order('created_at', { ascending: false });
 
-        res.json({ success: true, pessoas: rows });
+        if (error) throw error;
+
+        res.json({ success: true, pessoas: data });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Erro ao buscar pessoas' });
     }
 });
 
-// Nova rota para listar TODOS os contatos da rede (para Minha Rede)
+// Listar TODOS os contatos
 router.get('/todos-contatos', verificarToken, async (req, res) => {
     try {
-        // Se for master (user_id=2), retorna todos os usuários
+        let query = supabase
+            .from('pessoas')
+            .select('*, users(username)');
+
         if (req.usuarioId === 2) {
-            const [rows] = await pool.query(
-                'SELECT p.*, u.username FROM pessoas p JOIN users u ON p.user_id = u.id ORDER BY p.user_id, p.created_at DESC'
-            );
-            return res.json({ success: true, pessoas: rows });
+            // Master vê todos
+        } else {
+            query = query.eq('user_id', req.usuarioId);
         }
-        
-        // Para outros usuários, retorna apenas os seus contatos
-        const [rows] = await pool.query(
-            'SELECT * FROM pessoas WHERE user_id = ? ORDER BY created_at DESC',
-            [req.usuarioId]
-        );
-        res.json({ success: true, pessoas: rows });
+
+        const { data, error } = await query.order('user_id').order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        res.json({ success: true, pessoas: data });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Erro ao buscar contatos' });
     }
 });
 
-// Atualizar pessoa (EDITAR)
+// Atualizar pessoa
 router.put('/:id', verificarToken, async (req, res) => {
     const { 
         nome_completo, endereco, cpf, titulo_eleitor, zona, sessao, 
-        foto_url, coordenadas, link_maps, cep, latitude, longitude 
+        foto_url, coordenadas, link_maps, cep, latitude, longitude,
+        endereco_votacao, local_votacao, bairro_votacao, municipio_votacao
     } = req.body;
     const pessoaId = req.params.id;
     const usuarioId = req.usuarioId;
@@ -131,63 +142,54 @@ router.put('/:id', verificarToken, async (req, res) => {
     }
 
     try {
-        // Verificar se a pessoa pertence ao usuário logado
-        const [check] = await pool.query(
-            'SELECT id FROM pessoas WHERE id = ? AND user_id = ?',
-            [pessoaId, usuarioId]
-        );
+        const { data: check, error: checkError } = await supabase
+            .from('pessoas')
+            .select('id')
+            .eq('id', pessoaId)
+            .eq('user_id', usuarioId)
+            .single();
 
-        if (check.length === 0) {
+        if (checkError || !check) {
             return res.status(404).json({ error: 'Pessoa não encontrada ou não pertence a você' });
         }
 
-        const [result] = await pool.query(
-            `UPDATE pessoas SET 
-                nome_completo = ?, 
-                endereco = ?, 
-                cpf = ?, 
-                titulo_eleitor = ?, 
-                zona = ?, 
-                sessao = ?, 
-                foto_url = ?, 
-                coordenadas = ?, 
-                link_maps = ?, 
-                cep = ?, 
-                latitude = ?, 
-                longitude = ?,
-                updated_at = CURRENT_TIMESTAMP
-             WHERE id = ? AND user_id = ?`,
-            [
-                nome_completo, 
-                endereco, 
-                cpf, 
-                titulo_eleitor || null, 
-                zona || null, 
-                sessao || null, 
-                foto_url || null, 
-                coordenadas || null, 
-                link_maps || null, 
-                cep || null, 
-                latitude || null, 
-                longitude || null,
-                pessoaId,
-                usuarioId
-            ]
-        );
+        const { error: updateError } = await supabase
+            .from('pessoas')
+            .update({
+                nome_completo,
+                endereco,
+                cpf,
+                titulo_eleitor: titulo_eleitor || null,
+                zona: zona || null,
+                sessao: sessao || null,
+                foto_url: foto_url || null,
+                coordenadas: coordenadas || null,
+                link_maps: link_maps || null,
+                cep: cep || null,
+                latitude: latitude || null,
+                longitude: longitude || null,
+                endereco_votacao: endereco_votacao || null,
+                local_votacao: local_votacao || null,
+                bairro_votacao: bairro_votacao || null,
+                municipio_votacao: municipio_votacao || null,
+                updated_at: new Date()
+            })
+            .eq('id', pessoaId)
+            .eq('user_id', usuarioId);
 
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'Pessoa não encontrada' });
+        if (updateError) {
+            if (updateError.code === '23505') {
+                return res.status(400).json({ error: 'CPF já cadastrado para outra pessoa' });
+            }
+            throw updateError;
         }
 
-        res.json({ 
-            success: true, 
-            message: 'Pessoa atualizada com sucesso' 
+        res.json({
+            success: true,
+            message: 'Pessoa atualizada com sucesso'
         });
     } catch (error) {
         console.error(error);
-        if (error.code === 'ER_DUP_ENTRY') {
-            return res.status(400).json({ error: 'CPF já cadastrado para outra pessoa' });
-        }
         res.status(500).json({ error: 'Erro ao atualizar pessoa: ' + error.message });
     }
 });
@@ -195,14 +197,13 @@ router.put('/:id', verificarToken, async (req, res) => {
 // Deletar pessoa
 router.delete('/:id', verificarToken, async (req, res) => {
     try {
-        const [result] = await pool.query(
-            'DELETE FROM pessoas WHERE id = ? AND user_id = ?',
-            [req.params.id, req.usuarioId]
-        );
+        const { error } = await supabase
+            .from('pessoas')
+            .delete()
+            .eq('id', req.params.id)
+            .eq('user_id', req.usuarioId);
 
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'Pessoa não encontrada' });
-        }
+        if (error) throw error;
 
         res.json({ success: true, message: 'Pessoa removida com sucesso' });
     } catch (error) {
@@ -211,35 +212,33 @@ router.delete('/:id', verificarToken, async (req, res) => {
     }
 });
 
-// Rota de estatísticas para Dashboard
+// Estatísticas para Dashboard
 router.get('/estatisticas', verificarToken, async (req, res) => {
     try {
         const usuarioId = req.usuarioId;
         
-        // Buscar todas as pessoas do usuário (ou todos se for master)
-        let queryPessoas = '';
-        let params = [];
+        let query = supabase.from('pessoas').select('*');
         
-        if (usuarioId === 2) {
-            // Master vê todos os usuários
-            queryPessoas = 'SELECT * FROM pessoas WHERE nome_completo != "Administrador" AND nome_completo != "Boss Master"';
-        } else {
-            // Usuário comum vê apenas seus contatos
-            queryPessoas = 'SELECT * FROM pessoas WHERE user_id = ? AND nome_completo != "Administrador"';
-            params = [usuarioId];
+        if (usuarioId !== 2) {
+            query = query.eq('user_id', usuarioId);
         }
+
+        const { data: pessoas, error } = await query;
+
+        if (error) throw error;
+
+        const filtered = pessoas.filter(p => 
+            p.nome_completo !== 'Administrador' && 
+            p.nome_completo !== 'Boss Master'
+        );
+
+        const totalContatos = filtered.length;
         
-        const [pessoas] = await pool.query(queryPessoas, params);
-        
-        // Total de contatos
-        const totalContatos = pessoas.length;
-        
-        // Extrair cidade e estado do endereço
         const cidadesMap = new Map();
         const bairrosMap = new Map();
         const estadosMap = new Map();
         
-        pessoas.forEach(pessoa => {
+        filtered.forEach(pessoa => {
             if (pessoa.endereco) {
                 const partes = pessoa.endereco.split(',').map(p => p.trim());
                 const bairro = partes[2] || 'Não informado';
@@ -258,7 +257,6 @@ router.get('/estatisticas', verificarToken, async (req, res) => {
             }
         });
         
-        // Converter para arrays ordenados
         const topCidades = Array.from(cidadesMap.entries())
             .map(([cidade, total]) => ({ cidade, total }))
             .sort((a, b) => b.total - a.total)
@@ -286,4 +284,5 @@ router.get('/estatisticas', verificarToken, async (req, res) => {
         res.status(500).json({ error: 'Erro ao buscar estatísticas' });
     }
 });
+
 module.exports = router;
