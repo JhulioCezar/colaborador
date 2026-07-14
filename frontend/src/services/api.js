@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // URL da API no Render (backend)
-const API_URL = process.env.REACT_APP_API_URL || 'https://colaborador-jomz.onrender.com';
+const API_URL = process.env.REACT_APP_API_URL;
 
 // Criar instância do axios com configurações padrão
 const api = axios.create({
