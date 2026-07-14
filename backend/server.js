@@ -6,7 +6,7 @@ const path = require('path');
 dotenv.config();
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors());
@@ -30,9 +30,6 @@ app.get('/api/teste', (req, res) => {
     res.json({ mensagem: 'API funcionando!' });
 });
 
-// Iniciar servidor
 app.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`);
-    console.log(`Teste: http://localhost:${PORT}/api/teste`);
-    console.log(`Upload teste: http://localhost:${PORT}/api/upload/teste`);
 });
