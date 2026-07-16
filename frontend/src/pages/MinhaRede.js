@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../services/api';
+import { listPessoas, deletePessoa } from '../services/supabase';
 import Layout from '../components/Layout';
 import './MinhaRede.css';
 
@@ -12,7 +12,6 @@ function MinhaRede() {
   const [expandidos, setExpandidos] = useState({});
   const navigate = useNavigate();
 
-  // Função para pegar apenas o primeiro nome
   const getPrimeiroNome = (nomeCompleto) => {
     if (!nomeCompleto) return '';
     return nomeCompleto.split(' ')[0];
@@ -24,25 +23,28 @@ function MinhaRede() {
 
   const carregarPessoas = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await api.get('/pessoas/todos-contatos', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const user = JSON.parse(localStorage.getItem('user'));
+      const userId = user?.id;
       
-      setPessoas(response.data.pessoas);
-      construirArvore(response.data.pessoas);
+      if (!userId) {
+        navigate('/login');
+        return;
+      }
+
+      const result = await listPessoas(userId);
+      const listaPessoas = result.pessoas || [];
+      
+      setPessoas(listaPessoas);
+      construirArvore(listaPessoas);
       
       const expandidosIniciais = {};
-      response.data.pessoas.forEach(p => {
-        expandidosIniciais[p.id] = true; // Inicialmente tudo expandido
+      listaPessoas.forEach(p => {
+        expandidosIniciais[p.id] = true;
       });
       setExpandidos(expandidosIniciais);
       
     } catch (error) {
       console.error('Erro ao carregar pessoas:', error);
-      if (error.response?.status === 401) {
-        navigate('/login');
-      }
     } finally {
       setLoading(false);
     }
@@ -124,10 +126,7 @@ function MinhaRede() {
   const handleDeletar = async (id, nome) => {
     if (window.confirm(`Tem certeza que deseja deletar ${nome}?`)) {
       try {
-        const token = localStorage.getItem('token');
-        await api.delete(`/pessoas/${id}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        await deletePessoa(id);
         alert('Pessoa deletada com sucesso!');
         carregarPessoas();
         setPessoaSelecionada(null);
@@ -138,58 +137,59 @@ function MinhaRede() {
     }
   };
 
+  // Componente de renderização da árvore (mantenha o mesmo do código original)
   const RenderArvoreTeia = ({ nodes, nivel = 0 }) => {
-  return (
-    <div className="teia-nivel">
-      {nodes.map((node, index) => {
-        const temFilhos = node.filhos && node.filhos.length > 0;
-        const estaExpandido = expandidos[node.id];
-        const primeiroNome = getPrimeiroNome(node.nome_completo);
-        
-        return (
-          <div key={node.id} className="teia-node-wrapper">
-            <div className="teia-node">
-              <div 
-                className={`teia-avatar ${pessoaSelecionada?.id === node.id ? 'selecionado' : ''}`}
-                onClick={() => setPessoaSelecionada(node)}
-              >
-                {node.foto_url ? (
-                  <img src={node.foto_url} alt={primeiroNome} />
-                ) : (
-                  <div className="teia-avatar-placeholder">👤</div>
+    return (
+      <div className="teia-nivel">
+        {nodes.map((node, index) => {
+          const temFilhos = node.filhos && node.filhos.length > 0;
+          const estaExpandido = expandidos[node.id];
+          const primeiroNome = getPrimeiroNome(node.nome_completo);
+          
+          return (
+            <div key={node.id} className="teia-node-wrapper">
+              <div className="teia-node">
+                <div 
+                  className={`teia-avatar ${pessoaSelecionada?.id === node.id ? 'selecionado' : ''}`}
+                  onClick={() => setPessoaSelecionada(node)}
+                >
+                  {node.foto_url ? (
+                    <img src={node.foto_url} alt={primeiroNome} />
+                  ) : (
+                    <div className="teia-avatar-placeholder">👤</div>
+                  )}
+                </div>
+                <div className="teia-nome">{primeiroNome}</div>
+                {temFilhos && (
+                  <button 
+                    className="teia-expandir"
+                    onClick={(e) => { e.stopPropagation(); toggleExpandir(node.id); }}
+                  >
+                    {estaExpandido ? '−' : '+'}
+                  </button>
                 )}
               </div>
-              <div className="teia-nome">{primeiroNome}</div>
-              {temFilhos && (
-                <button 
-                  className="teia-expandir"
-                  onClick={(e) => { e.stopPropagation(); toggleExpandir(node.id); }}
-                >
-                  {estaExpandido ? '−' : '+'}
-                </button>
+              
+              {temFilhos && estaExpandido && (
+                <div className="teia-conexoes">
+                  <div className="teia-linha-vertical"></div>
+                  <div className="teia-linha-horizontal"></div>
+                  <div className="teia-filhos">
+                    {node.filhos.map((filho, idx) => (
+                      <div key={filho.id} className="teia-filho-item">
+                        <div className="teia-linha-conexao-filho"></div>
+                        <RenderArvoreTeia nodes={[filho]} nivel={nivel + 1} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
-            
-            {temFilhos && estaExpandido && (
-              <div className="teia-conexoes">
-                <div className="teia-linha-vertical"></div>
-                <div className="teia-linha-horizontal"></div>
-                <div className="teia-filhos">
-                  {node.filhos.map((filho, idx) => (
-                    <div key={filho.id} className="teia-filho-item">
-                      <div className="teia-linha-conexao-filho"></div>
-                      <RenderArvoreTeia nodes={[filho]} nivel={nivel + 1} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-};
+          );
+        })}
+      </div>
+    );
+  };
 
   if (loading) {
     return (
