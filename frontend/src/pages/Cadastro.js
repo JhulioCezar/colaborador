@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../services/api';
+import { registerUser } from '../services/supabase';
 import './Cadastro.css';
 
 function Cadastro() {
@@ -37,27 +37,19 @@ function Cadastro() {
     }
 
     try {
-      const userResponse = await api.post('/auth/register', {
-        username: formData.username,
-        password: formData.password
-      });
-
-      await api.post('/pessoas', {
-        user_id: userResponse.data.userId,
-        nome_completo: formData.nome_completo,
-        endereco: formData.endereco,
-        cpf: formData.cpf,
-        titulo_eleitor: formData.titulo_eleitor,
-        zona: formData.zona,
-        sessao: formData.sessao
-      });
-
-      setSuccess('Cadastro realizado com sucesso! Redirecionando para o login...');
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
+      // Registrar usuário no Supabase
+      const result = await registerUser(formData.username, formData.password);
+      
+      if (result.success) {
+        // Criar pessoa (dados adicionais)
+        // Isso será feito separadamente depois do login
+        setSuccess('Cadastro realizado com sucesso! Redirecionando para o login...');
+        setTimeout(() => {
+          navigate('/login');
+        }, 2000);
+      }
     } catch (err) {
-      setError('Erro ao cadastrar. Verifique os dados e tente novamente.');
+      setError(err.message || 'Erro ao cadastrar. Verifique os dados e tente novamente.');
     }
   };
 
