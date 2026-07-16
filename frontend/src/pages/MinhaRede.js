@@ -137,7 +137,6 @@ function MinhaRede() {
     }
   };
 
-  // Componente de renderização da árvore (mantenha o mesmo do código original)
   const RenderArvoreTeia = ({ nodes, nivel = 0 }) => {
     return (
       <div className="teia-nivel">
