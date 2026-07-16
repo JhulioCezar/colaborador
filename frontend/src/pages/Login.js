@@ -16,12 +16,13 @@ function Login() {
 
     try {
       const result = await loginUser(username, password);
-
-if (result.success) {
-  // Salvar token e redirecionar
-  localStorage.setItem('user', JSON.stringify(result.user));
-  navigate('/dashboard');
-}
+      
+      if (result.success) {
+        // Salvar dados do usuário
+        localStorage.setItem('user', JSON.stringify(result.user));
+        // Redirecionar para dashboard
+        navigate('/dashboard');
+      }
     } catch (err) {
       setError('Usuário ou senha inválidos');
     }
