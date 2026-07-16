@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../services/api';
+import { loginUser } from '../services/supabase';
 import './Login.css';
 
 function Login() {
@@ -15,16 +15,13 @@ function Login() {
     setError('');
 
     try {
-      const response = await api.post('/auth/login', {
-        username,
-        password
-      });
+      const result = await loginUser(username, password);
 
-      if (response.data.success) {
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-        navigate('/dashboard');
-      }
+if (result.success) {
+  // Salvar token e redirecionar
+  localStorage.setItem('user', JSON.stringify(result.user));
+  navigate('/dashboard');
+}
     } catch (err) {
       setError('Usuário ou senha inválidos');
     }
